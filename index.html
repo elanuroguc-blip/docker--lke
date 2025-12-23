@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ülkeler 🌍</title>
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            font-family: Arial, sans-serif;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #0072ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005bd1;
+        }
+
+        .info {
+            margin-top: 15px;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>🌍 Ülke Bilgisi</h2>
+
+        <select id="countrySelect"></select>
+
+        <button onclick="getCountry()">Bilgileri Göster</button>
+
+        <img id="flag" />
+
+        <div class="info" id="info"></div>
+    </div>
+
+    <script>
+        let countries = [];
+
+        // Sayfa açılırken tüm ülkeleri çek
+        fetch("https://restcountries.com/v3.1/all")
+            .then(r => r.json())
+            .then(data => {
+                countries = data;
+
+                const select = document.getElementById("countrySelect");
+                data.forEach(c => {
+                    const option = document.createElement("option");
+                    option.value = c.name.common;
+                    option.innerText = c.name.common;
+                    select.appendChild(option);
+                });
+            });
+
+        function getCountry() {
+            const name = document.getElementById("countrySelect").value;
+            const country = countries.find(c => c.name.common === name);
+
+            const currency = country.currencies
+                ? Object.values(country.currencies)[0]
+                : null;
+
+            document.getElementById("flag").src = country.flags.png;
+
+            document.getElementById("info").innerHTML = `
+                <p><strong>Başkent:</strong> ${country.capital ? country.capital[0] : "-"}</p>
+                <p><strong>Bölge:</strong> ${country.region}</p>
+                <p><strong>Nüfus:</strong> ${country.population.toLocaleString()}</p>
+                <p><strong>Para Birimi:</strong> ${currency ? currency.name + " (" + currency.symbol + ")" : "-"}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
