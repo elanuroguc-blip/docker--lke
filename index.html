@@ -73,7 +73,7 @@
     <script>
     let countries = [];
 
-    fetch("https://restcountries.com/v3.1/all")
+    fetch("https://restcountries.com/v3.1/region/europe")
         .then(res => {
             if (!res.ok) {
                 throw new Error("API hata verdi");
