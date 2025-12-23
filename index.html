@@ -71,40 +71,53 @@
     </div>
 
     <script>
-        let countries = [];
+    let countries = [];
 
-        // Sayfa açılırken tüm ülkeleri çek
-        fetch("https://restcountries.com/v3.1/all")
-            .then(r => r.json())
-            .then(data => {
-                countries = data;
+    fetch("https://restcountries.com/v3.1/all")
+        .then(res => res.json())
+        .then(data => {
+            countries = data;
 
-                const select = document.getElementById("countrySelect");
-                data.forEach(c => {
+            const select = document.getElementById("countrySelect");
+
+            data.forEach(country => {
+                if (country.name && country.name.common) {
                     const option = document.createElement("option");
-                    option.value = c.name.common;
-                    option.innerText = c.name.common;
+                    option.value = country.name.common;
+                    option.textContent = country.name.common;
                     select.appendChild(option);
-                });
+                }
             });
 
-        function getCountry() {
-            const name = document.getElementById("countrySelect").value;
-            const country = countries.find(c => c.name.common === name);
+            // Sayfa açılır açılmaz ilk ülkeyi göster
+            showCountry();
+        });
 
-            const currency = country.currencies
-                ? Object.values(country.currencies)[0]
-                : null;
+    function showCountry() {
+        const select = document.getElementById("countrySelect");
+        const selectedName = select.value;
 
-            document.getElementById("flag").src = country.flags.png;
+        const country = countries.find(
+            c => c.name.common === selectedName
+        );
 
-            document.getElementById("info").innerHTML = `
-                <p><strong>Başkent:</strong> ${country.capital ? country.capital[0] : "-"}</p>
-                <p><strong>Bölge:</strong> ${country.region}</p>
-                <p><strong>Nüfus:</strong> ${country.population.toLocaleString()}</p>
-                <p><strong>Para Birimi:</strong> ${currency ? currency.name + " (" + currency.symbol + ")" : "-"}</p>
-            `;
-        }
-    </script>
+        if (!country) return;
+
+        const currencyObj = country.currencies
+            ? Object.values(country.currencies)[0]
+            : null;
+
+        document.getElementById("flag").src = country.flags?.png || "";
+
+        document.getElementById("info").innerHTML = `
+            <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
+            <p><strong>Bölge:</strong> ${country.region || "-"}</p>
+            <p><strong>Nüfus:</strong> ${country.population?.toLocaleString() || "-"}</p>
+            <p><strong>Para Birimi:</strong> ${
+                currencyObj ? currencyObj.name + " (" + currencyObj.symbol + ")" : "-"
+            }</p>
+        `;
+    }
+</script>
 </body>
 </html>
