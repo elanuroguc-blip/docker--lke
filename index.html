@@ -74,14 +74,23 @@
     let countries = [];
 
     fetch("https://restcountries.com/v3.1/all")
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("API hata verdi");
+            }
+            return res.json();
+        })
         .then(data => {
-            countries = data;
+            if (!Array.isArray(data)) {
+                throw new Error("Gelen veri array değil");
+            }
 
+            countries = data;
             const select = document.getElementById("countrySelect");
+            select.innerHTML = "";
 
             data.forEach(country => {
-                if (country.name && country.name.common) {
+                if (country?.name?.common) {
                     const option = document.createElement("option");
                     option.value = country.name.common;
                     option.textContent = country.name.common;
@@ -89,21 +98,23 @@
                 }
             });
 
-            // Sayfa açılır açılmaz ilk ülkeyi göster
             showCountry();
+        })
+        .catch(err => {
+            document.getElementById("info").innerHTML =
+                "❌ Ülkeler yüklenemedi. API geçici hata verdi.";
+            console.error(err);
         });
 
     function showCountry() {
         const select = document.getElementById("countrySelect");
-        const selectedName = select.value;
-
         const country = countries.find(
-            c => c.name.common === selectedName
+            c => c.name.common === select.value
         );
 
         if (!country) return;
 
-        const currencyObj = country.currencies
+        const currency = country.currencies
             ? Object.values(country.currencies)[0]
             : null;
 
@@ -114,7 +125,7 @@
             <p><strong>Bölge:</strong> ${country.region || "-"}</p>
             <p><strong>Nüfus:</strong> ${country.population?.toLocaleString() || "-"}</p>
             <p><strong>Para Birimi:</strong> ${
-                currencyObj ? currencyObj.name + " (" + currencyObj.symbol + ")" : "-"
+                currency ? currency.name + " (" + currency.symbol + ")" : "-"
             }</p>
         `;
     }
