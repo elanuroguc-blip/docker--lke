@@ -70,65 +70,97 @@
         <div class="info" id="info"></div>
     </div>
 
-    <script>
-    let countries = [];
+   <script>
+    // 1. STATE (Durum Nesnesi)
+    // Uygulamanın tüm verisini burada tek bir yerde tutuyoruz.
+    const state = {
+        countries: [],
+        selectedCountry: null,
+        loading: true,
+        error: null
+    };
 
-    fetch("https://restcountries.com/v3.1/region/europe")
-        .then(res => {
-            if (!res.ok) {
-                throw new Error("API hata verdi");
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (!Array.isArray(data)) {
-                throw new Error("Gelen veri array değil");
-            }
-
-            countries = data;
-            const select = document.getElementById("countrySelect");
-            select.innerHTML = "";
-
-            data.forEach(country => {
-                if (country?.name?.common) {
-                    const option = document.createElement("option");
-                    option.value = country.name.common;
-                    option.textContent = country.name.common;
-                    select.appendChild(option);
-                }
-            });
-
-            showCountry();
-        })
-        .catch(err => {
-            document.getElementById("info").innerHTML =
-                "❌ Ülkeler yüklenemedi. API geçici hata verdi.";
-            console.error(err);
-        });
-
-    function showCountry() {
+    // 2. RENDER FONKSİYONU
+    // Ekranda ne görüneceği SADECE state'e bağlıdır.
+    function render() {
         const select = document.getElementById("countrySelect");
-        const country = countries.find(
-            c => c.name.common === select.value
-        );
+        const infoDiv = document.getElementById("info");
+        const flagImg = document.getElementById("flag");
 
-        if (!country) return;
+        // Hata durumu kontrolü
+        if (state.error) {
+            infoDiv.innerHTML = `<p style="color:red">❌ ${state.error}</p>`;
+            return;
+        }
 
-        const currency = country.currencies
-            ? Object.values(country.currencies)[0]
-            : null;
+        // Dropdown doldurma (Sadece ilk yüklemede bir kez)
+        if (select.options.length === 0 && state.countries.length > 0) {
+            state.countries.forEach(country => {
+                const option = document.createElement("option");
+                option.value = country.name.common;
+                option.textContent = country.name.common;
+                select.appendChild(option);
+            });
+            // Varsayılan ilk ülkeyi state'e ata
+            state.selectedCountry = state.countries[0];
+        }
 
-        document.getElementById("flag").src = country.flags?.png || "";
+        // Seçili ülke bilgilerini basma
+        const country = state.selectedCountry;
+        if (country) {
+            flagImg.src = country.flags.png;
+            
+            const currency = country.currencies 
+                ? Object.values(country.currencies)[0] 
+                : null;
 
-        document.getElementById("info").innerHTML = `
-            <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
-            <p><strong>Bölge:</strong> ${country.region || "-"}</p>
-            <p><strong>Nüfus:</strong> ${country.population?.toLocaleString() || "-"}</p>
-            <p><strong>Para Birimi:</strong> ${
-                currency ? currency.name + " (" + currency.symbol + ")" : "-"
-            }</p>
-        `;
+            infoDiv.innerHTML = `
+                <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
+                <p><strong>Bölge:</strong> ${country.region || "-"}</p>
+                <p><strong>Nüfus:</strong> ${country.population?.toLocaleString() || "-"}</p>
+                <p><strong>Para Birimi:</strong> ${
+                    currency ? `${currency.name} (${currency.symbol})` : "-"
+                }</p>
+            `;
+        }
     }
+
+    // 3. ACTIONS (Durumu Değiştiren Fonksiyonlar)
+    
+    // Ülke seçimini değiştirdiğinde
+    function handleCountrySelection() {
+        const selectValue = document.getElementById("countrySelect").value;
+        state.selectedCountry = state.countries.find(c => c.name.common === selectValue);
+        render(); // State değişti, arayüzü güncelle
+    }
+
+    // API'den verileri çekme
+    async function init() {
+        try {
+            const res = await fetch("https://restcountries.com/v3.1/region/europe");
+            if (!res.ok) throw new Error("API hata verdi");
+            
+            const data = await res.json();
+            
+            // State'i güncelle
+            state.countries = data;
+            state.loading = false;
+            
+            // Arayüzü çiz
+            render();
+        } catch (err) {
+            state.error = "Ülkeler yüklenemedi.";
+            state.loading = false;
+            render();
+            console.error(err);
+        }
+    }
+
+    // Başlat
+    init();
+
+    // HTML'deki butonun onclick kısmını güncelleyebiliriz ya da event listener ekleyebiliriz
+    // HTML'de: <button onclick="handleCountrySelection()">Bilgileri Göster</button>
 </script>
 </body>
 </html>
