@@ -59,41 +59,43 @@
 
 <body>
     <div class="card">
-        <h2>🌍 Ülke Bilgisi</h2>
-
-        <select id="countrySelect"></select>
-
-        <button onclick="showCountry()">Bilgileri Göster</button>
-
-        <img id="flag" />
-
-        <div class="info" id="info"></div>
+    <h2>🌍 Ülke Bilgisi</h2>
+    <select id="countrySelect" onchange="handleCountrySelection()"></select>
+    
+    <div class="button-group">
+        <button onclick="handleCountrySelection()">Bilgileri Göster</button>
+        <button onclick="addToFavorites()" style="background: #28a745; margin-top: 5px;">⭐ Favorilere Ekle</button>
     </div>
 
-   <script>
-    // 1. STATE (Durum Nesnesi)
-    // Uygulamanın tüm verisini burada tek bir yerde tutuyoruz.
+    <img id="flag" />
+    <div class="info" id="info"></div>
+
+    <hr>
+    <h3>⭐ Favori Ülkelerim</h3>
+    <ul id="favoritesList"></ul> </div>
+
+  <script>
+    // 1. STATE: Favoriler dizisini ekledik
     const state = {
         countries: [],
         selectedCountry: null,
-        loading: true,
+        favorites: [], // Favori ülkeleri burada tutacağız
         error: null
     };
 
-    // 2. RENDER FONKSİYONU
-    // Ekranda ne görüneceği SADECE state'e bağlıdır.
+    // 2. RENDER: State her değiştiğinde bu fonksiyon çalışır
     function render() {
         const select = document.getElementById("countrySelect");
         const infoDiv = document.getElementById("info");
         const flagImg = document.getElementById("flag");
+        const favList = document.getElementById("favoritesList");
 
-        // Hata durumu kontrolü
         if (state.error) {
-            infoDiv.innerHTML = `<p style="color:red">❌ ${state.error}</p>`;
+            infoDiv.innerHTML = `<p style="color:red">${state.error}</p>`;
             return;
         }
 
-        // Dropdown doldurma (Sadece ilk yüklemede bir kez)
+        // Dropdown doldurma
         if (select.options.length === 0 && state.countries.length > 0) {
             state.countries.forEach(country => {
                 const option = document.createElement("option");
@@ -101,66 +103,68 @@
                 option.textContent = country.name.common;
                 select.appendChild(option);
             });
-            // Varsayılan ilk ülkeyi state'e ata
             state.selectedCountry = state.countries[0];
         }
 
-        // Seçili ülke bilgilerini basma
+        // Seçili Ülke Bilgisi
         const country = state.selectedCountry;
         if (country) {
             flagImg.src = country.flags.png;
-            
-            const currency = country.currencies 
-                ? Object.values(country.currencies)[0] 
-                : null;
-
             infoDiv.innerHTML = `
                 <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
-                <p><strong>Bölge:</strong> ${country.region || "-"}</p>
-                <p><strong>Nüfus:</strong> ${country.population?.toLocaleString() || "-"}</p>
-                <p><strong>Para Birimi:</strong> ${
-                    currency ? `${currency.name} (${currency.symbol})` : "-"
-                }</p>
+                <p><strong>Nüfus:</strong> ${country.population?.toLocaleString()}</p>
             `;
+        }
+
+        // FAVORİLERİ LİSTELEME (State'den ekrana basma)
+        favList.innerHTML = ""; // Önce temizle
+        state.favorites.forEach((fav, index) => {
+            const li = document.createElement("li");
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            li.style.marginBottom = "5px";
+            li.innerHTML = `
+                <span>📍 ${fav.name.common}</span>
+                <button onclick="removeFromFavorites(${index})" style="width:auto; padding:2px 8px; background:red; font-size:12px;">Sil</button>
+            `;
+            favList.appendChild(li);
+        });
+    }
+
+    // 3. ACTIONS: State'i değiştiren fonksiyonlar
+    function handleCountrySelection() {
+        const val = document.getElementById("countrySelect").value;
+        state.selectedCountry = state.countries.find(c => c.name.common === val);
+        render();
+    }
+
+    function addToFavorites() {
+        const current = state.selectedCountry;
+        // Eğer zaten favorilerde yoksa ekle
+        if (current && !state.favorites.some(f => f.name.common === current.name.common)) {
+            state.favorites.push(current);
+            render(); // State güncellendi, ekranı yenile!
         }
     }
 
-    // 3. ACTIONS (Durumu Değiştiren Fonksiyonlar)
-    
-    // Ülke seçimini değiştirdiğinde
-    function handleCountrySelection() {
-        const selectValue = document.getElementById("countrySelect").value;
-        state.selectedCountry = state.countries.find(c => c.name.common === selectValue);
-        render(); // State değişti, arayüzü güncelle
+    function removeFromFavorites(index) {
+        state.favorites.splice(index, 1); // Seçilen index'teki elemanı sil
+        render(); // State güncellendi, ekranı yenile!
     }
 
-    // API'den verileri çekme
     async function init() {
         try {
             const res = await fetch("https://restcountries.com/v3.1/region/europe");
-            if (!res.ok) throw new Error("API hata verdi");
-            
-            const data = await res.json();
-            
-            // State'i güncelle
-            state.countries = data;
-            state.loading = false;
-            
-            // Arayüzü çiz
+            if (!res.ok) throw new Error("API hatası");
+            state.countries = await res.json();
             render();
         } catch (err) {
-            state.error = "Ülkeler yüklenemedi.";
-            state.loading = false;
+            state.error = "Veriler yüklenemedi.";
             render();
-            console.error(err);
         }
     }
 
-    // Başlat
     init();
-
-    // HTML'deki butonun onclick kısmını güncelleyebiliriz ya da event listener ekleyebiliriz
-    // HTML'de: <button onclick="handleCountrySelection()">Bilgileri Göster</button>
 </script>
 </body>
 </html>
