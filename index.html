@@ -4,67 +4,17 @@
     <meta charset="UTF-8">
     <title>Ülkeler 🌍</title>
     <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            font-family: Arial, sans-serif;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            width: 380px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-        }
-        img {
-            width: 100%;
-            height: 180px;
-            object-fit: contain;
-            margin-bottom: 15px;
-        }
-        select, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background: #0072ff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #005bd1;
-        }
-        .info {
-            margin-top: 15px;
-            color: #333;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-        }
-        li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .remove-btn {
-            background: #ff4d4d;
-            width: auto;
-            padding: 2px 8px;
-            font-size: 12px;
-        }
+        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #00c6ff, #0072ff); font-family: Arial, sans-serif; }
+        .card { background: white; padding: 20px; border-radius: 16px; width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.25); }
+        img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 15px; background: #f9f9f9; }
+        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { background: #0072ff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #005bd1; }
+        .info { margin-top: 15px; color: #333; min-height: 60px; }
+        hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
+        ul { list-style: none; padding: 0; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        li { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .remove-btn { background: #ff4d4d; width: auto; padding: 3px 8px; font-size: 11px; margin: 0; }
     </style>
 </head>
 <body>
@@ -78,7 +28,7 @@
         <button onclick="addToFavorites()" style="background: #28a745; margin-top: 5px;">⭐ Favorilere Ekle</button>
     </div>
 
-    <img id="flag" />
+    <img id="flag" alt="Bayrak" />
     <div class="info" id="info"></div>
 
     <hr>
@@ -87,27 +37,29 @@
 </div>
 
 <script>
-    // 1. STATE: Favorileri localStorage'dan başlatıyoruz
+    // 1. STATE: Favorileri doğrudan localStorage'dan alarak başlatıyoruz
     const state = {
         countries: [],
         selectedCountry: null,
-        favorites: JSON.parse(localStorage.getItem("favorites")) || [], // Kalıcılık burada sağlanıyor
+        // Sayfa açıldığı an hafızadan oku
+        favorites: JSON.parse(localStorage.getItem("favorites")) || [], 
         error: null
     };
 
-    // 2. RENDER: State her değiştiğinde bu fonksiyon çalışır
+    // 2. RENDER: Ekranı her zaman güncel tutan fonksiyon
     function render() {
         const select = document.getElementById("countrySelect");
         const infoDiv = document.getElementById("info");
         const flagImg = document.getElementById("flag");
         const favList = document.getElementById("favoritesList");
 
+        // Hata kontrolü
         if (state.error) {
             infoDiv.innerHTML = `<p style="color:red">${state.error}</p>`;
             return;
         }
 
-        // Dropdown doldurma
+        // Select menüsünü doldur (Sadece liste boşsa yap)
         if (select.options.length === 0 && state.countries.length > 0) {
             state.countries.forEach(country => {
                 const option = document.createElement("option");
@@ -115,20 +67,20 @@
                 option.textContent = country.name.common;
                 select.appendChild(option);
             });
-            state.selectedCountry = state.countries[0];
+            // İlk açılışta ilk ülkeyi seçili yap
+            if(!state.selectedCountry) state.selectedCountry = state.countries[0];
         }
 
-        // Seçili Ülke Bilgisi
-        const country = state.selectedCountry;
-        if (country) {
-            flagImg.src = country.flags.png;
+        // Seçili Ülke Detaylarını Göster
+        if (state.selectedCountry) {
+            flagImg.src = state.selectedCountry.flags.png;
             infoDiv.innerHTML = `
-                <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
-                <p><strong>Nüfus:</strong> ${country.population?.toLocaleString()}</p>
+                <p><strong>Başkent:</strong> ${state.selectedCountry.capital?.[0] || "-"}</p>
+                <p><strong>Nüfus:</strong> ${state.selectedCountry.population?.toLocaleString()}</p>
             `;
         }
 
-        // FAVORİLERİ LİSTELEME
+        // FAVORİLERİ LİSTELE (localStorage'dan gelen veriyi basar)
         favList.innerHTML = ""; 
         state.favorites.forEach((fav, index) => {
             const li = document.createElement("li");
@@ -140,7 +92,7 @@
         });
     }
 
-    // 3. ACTIONS: State'i değiştiren fonksiyonlar
+    // 3. ACTIONS: İşlem fonksiyonları
     function handleCountrySelection() {
         const val = document.getElementById("countrySelect").value;
         state.selectedCountry = state.countries.find(c => c.name.common === val);
@@ -151,7 +103,7 @@
         const current = state.selectedCountry;
         if (current && !state.favorites.some(f => f.name.common === current.name.common)) {
             state.favorites.push(current);
-            // Güncel listeyi hafızaya kaydet
+            // Hafızaya yaz
             localStorage.setItem("favorites", JSON.stringify(state.favorites));
             render();
         }
@@ -159,17 +111,21 @@
 
     function removeFromFavorites(index) {
         state.favorites.splice(index, 1);
-        // Güncel listeyi hafızaya kaydet
+        // Hafızayı güncelle
         localStorage.setItem("favorites", JSON.stringify(state.favorites));
         render();
     }
 
+    // Başlangıç fonksiyonu
     async function init() {
+        // Önce hafızadaki favorileri bir göster (Hızlı yükleme için)
+        render(); 
+
         try {
             const res = await fetch("https://restcountries.com/v3.1/region/europe");
             if (!res.ok) throw new Error("API hatası");
             state.countries = await res.json();
-            render();
+            render(); // Veriler gelince select menüsünü güncelle
         } catch (err) {
             state.error = "Veriler yüklenemedi.";
             render();
