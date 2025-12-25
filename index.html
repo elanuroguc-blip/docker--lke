@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Ülkeler 🌍</title>
-
     <style>
         body {
             margin: 0;
@@ -14,23 +13,20 @@
             background: linear-gradient(135deg, #00c6ff, #0072ff);
             font-family: Arial, sans-serif;
         }
-
         .card {
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 16px;
             width: 380px;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
         }
-
         img {
             width: 100%;
             height: 180px;
             object-fit: contain;
             margin-bottom: 15px;
         }
-
         select, button {
             width: 100%;
             padding: 10px;
@@ -38,30 +34,45 @@
             border-radius: 8px;
             border: 1px solid #ccc;
         }
-
         button {
             background: #0072ff;
             color: white;
             border: none;
             cursor: pointer;
         }
-
         button:hover {
             background: #005bd1;
         }
-
         .info {
             margin-top: 15px;
             color: #333;
         }
+        ul {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .remove-btn {
+            background: #ff4d4d;
+            width: auto;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
     </style>
 </head>
-
 <body>
-    <div class="card">
+
+<div class="card">
     <h2>🌍 Ülke Bilgisi</h2>
     <select id="countrySelect" onchange="handleCountrySelection()"></select>
-    
+
     <div class="button-group">
         <button onclick="handleCountrySelection()">Bilgileri Göster</button>
         <button onclick="addToFavorites()" style="background: #28a745; margin-top: 5px;">⭐ Favorilere Ekle</button>
@@ -72,14 +83,15 @@
 
     <hr>
     <h3>⭐ Favori Ülkelerim</h3>
-    <ul id="favoritesList"></ul> </div>
+    <ul id="favoritesList"></ul>
+</div>
 
-  <script>
-    // 1. STATE: Favoriler dizisini ekledik
+<script>
+    // 1. STATE: Favorileri localStorage'dan başlatıyoruz
     const state = {
         countries: [],
         selectedCountry: null,
-        favorites: [], // Favori ülkeleri burada tutacağız
+        favorites: JSON.parse(localStorage.getItem("favorites")) || [], // Kalıcılık burada sağlanıyor
         error: null
     };
 
@@ -116,16 +128,13 @@
             `;
         }
 
-        // FAVORİLERİ LİSTELEME (State'den ekrana basma)
-        favList.innerHTML = ""; // Önce temizle
+        // FAVORİLERİ LİSTELEME
+        favList.innerHTML = ""; 
         state.favorites.forEach((fav, index) => {
             const li = document.createElement("li");
-            li.style.display = "flex";
-            li.style.justifyContent = "space-between";
-            li.style.marginBottom = "5px";
             li.innerHTML = `
-                <span>📍 ${fav.name.common}</span>
-                <button onclick="removeFromFavorites(${index})" style="width:auto; padding:2px 8px; background:red; font-size:12px;">Sil</button>
+                <span>${fav.name.common}</span>
+                <button class="remove-btn" onclick="removeFromFavorites(${index})">Sil</button>
             `;
             favList.appendChild(li);
         });
@@ -140,16 +149,19 @@
 
     function addToFavorites() {
         const current = state.selectedCountry;
-        // Eğer zaten favorilerde yoksa ekle
         if (current && !state.favorites.some(f => f.name.common === current.name.common)) {
             state.favorites.push(current);
-            render(); // State güncellendi, ekranı yenile!
+            // Güncel listeyi hafızaya kaydet
+            localStorage.setItem("favorites", JSON.stringify(state.favorites));
+            render();
         }
     }
 
     function removeFromFavorites(index) {
-        state.favorites.splice(index, 1); // Seçilen index'teki elemanı sil
-        render(); // State güncellendi, ekranı yenile!
+        state.favorites.splice(index, 1);
+        // Güncel listeyi hafızaya kaydet
+        localStorage.setItem("favorites", JSON.stringify(state.favorites));
+        render();
     }
 
     async function init() {
@@ -166,5 +178,6 @@
 
     init();
 </script>
+
 </body>
 </html>
