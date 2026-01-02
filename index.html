@@ -2,8 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elanur Öğüç</title>
+    <title>Elanur Ögüç</title>
     <style>
         body {
             margin: 0;
@@ -16,104 +15,116 @@
         }
         .card {
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 16px;
             width: 380px;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
         }
-        h2 { margin-top: 0; color: #333; }
+        img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            margin-top: 15px;
+        }
         select, button {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             margin-top: 10px;
             border-radius: 8px;
             border: 1px solid #ccc;
-            font-size: 14px;
         }
         button {
             background: #0072ff;
             color: white;
             border: none;
             cursor: pointer;
-            font-weight: bold;
         }
-        button:hover { background: #005bd1; }
-        img {
-            width: 100%;
-            height: 180px;
-            object-fit: contain;
-            margin: 15px 0;
-            display: none;
-            border-radius: 8px;
+        button:hover {
+            background: #005bd1;
         }
-        .info { text-align: left; margin-top: 15px; color: #333; }
+        .info {
+            margin-top: 15px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🌎 Ülke Bilgisi</h2>
-    <select id="countrySelect">
-        <option value="">Ülkeler Yükleniyor...</option>
-    </select>
-    <button onclick="getCountry()">Bilgileri Göster</button>
-    <img id="flag" src="" />
-    <div id="info" class="info"></div>
+    <h2>🌍 Ülke Bilgisi</h2>
+    <select id="countrySelect" onchange="handleCountrySelection()"></select>
+
+    <div class="button-group">
+        <button onclick="handleCountrySelection()">Bilgileri Göster</button>
+    </div>
+
+    <img id="flag" />
+    <div class="info" id="info"></div>
 </div>
 
 <script>
-    let countries = [];
-    const select = document.getElementById("countrySelect");
+    // 1. STATE
+    const state = {
+        countries: [],
+        selectedCountry: null,
+        error: null
+    };
 
-    // Sayfa açılır açılmaz verileri çek
-    fetch("https://restcountries.com/v3.1/all")
-        .then(r => r.json())
-        .then(data => {
-            // Alfabetik sırala
-            countries = data.sort((a, b) => a.name.common.localeCompare(b.name.common));
-            
-            // "Yükleniyor" yazısını sil ve listeyi doldur
-            select.innerHTML = '<option value="">Bir ülke seçiniz...</option>';
-            
-            countries.forEach(c => {
-                const option = document.createElement("option");
-                option.value = c.name.common;
-                option.innerText = c.name.common;
-                select.appendChild(option);
-            });
-        })
-        .catch(err => {
-            select.innerHTML = '<option value="">Hata: Veri çekilemedi!</option>';
-            console.error(err);
-        });
-
-    function getCountry() {
-        const name = select.value;
-        if (!name) return;
-
-        const country = countries.find(c => c.name.common === name);
-        const flagImg = document.getElementById("flag");
+    // 2. RENDER: State her değiştiğinde bu fonksiyon çalışır
+    function render() {
+        const select = document.getElementById("countrySelect");
         const infoDiv = document.getElementById("info");
+        const flagImg = document.getElementById("flag");
 
-        // Bayrağı güncelle
-        flagImg.src = country.flags.png;
-        flagImg.style.display = "block";
-
-        // Para birimi kontrolü
-        let currency = "-";
-        if (country.currencies) {
-            const key = Object.keys(country.currencies)[0];
-            currency = `${country.currencies[key].name} (${country.currencies[key].symbol || ''})`;
+        if (state.error) {
+            infoDiv.innerHTML = `<p style="color:red">${state.error}</p>`;
+            return;
         }
 
-        infoDiv.innerHTML = `
-            <p><strong>Başkent:</strong> ${country.capital ? country.capital[0] : "-"}</p>
-            <p><strong>Bölge:</strong> ${country.region}</p>
-            <p><strong>Nüfus:</strong> ${country.population.toLocaleString('tr-TR')}</p>
-            <p><strong>Para Birimi:</strong> ${currency}</p>
-        `;
+        // Dropdown doldurma
+        if (select.options.length === 0 && state.countries.length > 0) {
+            state.countries.forEach(country => {
+                const option = document.createElement("option");
+                option.value = country.name.common;
+                option.textContent = country.name.common;
+                select.appendChild(option);
+            });
+            state.selectedCountry = state.countries[0];
+        }
+
+        // Seçili Ülke Bilgisi
+        const country = state.selectedCountry;
+        if (country) {
+            flagImg.src = country.flags.png;
+            infoDiv.innerHTML = `
+                <p><strong>Başkent:</strong> ${country.capital?.[0] || "-"}</p>
+                <p><strong>Nüfus:</strong> ${country.population?.toLocaleString()}</p>
+            `;
+        }
     }
+
+    // 3. ACTIONS
+    function handleCountrySelection() {
+        const val = document.getElementById("countrySelect").value;
+        state.selectedCountry = state.countries.find(c => c.name.common === val);
+        render();
+    }
+
+    async function init() {
+        try {
+            const res = await fetch("https://restcountries.com/v3.1/region/europe");
+            if (!res.ok) throw new Error("API hatası");
+            state.countries = await res.json();
+            render();
+        } catch (err) {
+            state.error = "Veriler yüklenemedi.";
+            render();
+        }
+    }
+
+    init();
 </script>
 
 </body>
