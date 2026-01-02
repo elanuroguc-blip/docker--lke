@@ -3,137 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <title>Elanur Ögüç</title>
+
     <style>
-        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #00c6ff, #0072ff); font-family: Arial, sans-serif; }
-        .card { background: white; padding: 20px; border-radius: 16px; width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.25); }
-        img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 15px; background: #f9f9f9; }
-        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; }
-        button { background: #0072ff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #005bd1; }
-        .info { margin-top: 15px; color: #333; min-height: 60px; }
-        hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
-        ul { list-style: none; padding: 0; margin-top: 10px; max-height: 150px; overflow-y: auto; }
-        li { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-        .remove-btn { background: #ff4d4d; width: auto; padding: 3px 8px; font-size: 11px; margin: 0; }
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            font-family: Arial, sans-serif;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #0072ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005bd1;
+        }
+
+        .info {
+            margin-top: 15px;
+            color: #333;
+        }
     </style>
 </head>
+
 <body>
+    <div class="card">
+        <h2>🌍 Ülke Bilgisi</h2>
 
-<div class="card">
-    <h2>🌍 Ülke Bilgisi</h2>
-    <select id="countrySelect" onchange="handleCountrySelection()"></select>
+        <select id="countrySelect"></select>
 
-    <div class="button-group">
-        <button onclick="handleCountrySelection()">Bilgileri Göster</button>
-        <button onclick="addToFavorites()" style="background: #28a745; margin-top: 5px;">⭐ Favorilere Ekle</button>
+        <button onclick="getCountry()">Bilgileri Göster</button>
+
+        <img id="flag" />
+
+        <div class="info" id="info"></div>
     </div>
 
-    <img id="flag" alt="Bayrak" />
-    <div class="info" id="info"></div>
+    <script>
+        let countries = [];
 
-    <hr>
-    <h3>⭐ Favori Ülkelerim</h3>
-    <ul id="favoritesList"></ul>
-</div>
+        // Sayfa açılırken tüm ülkeleri çek
+        fetch("https://restcountries.com/v3.1/all")
+            .then(r => r.json())
+            .then(data => {
+                countries = data;
 
-<script>
-    // 1. STATE: Favorileri doğrudan localStorage'dan alarak başlatıyoruz
-    const state = {
-        countries: [],
-        selectedCountry: null,
-        // Sayfa açıldığı an hafızadan oku
-        favorites: JSON.parse(localStorage.getItem("favorites")) || [], 
-        error: null
-    };
-
-    // 2. RENDER: Ekranı her zaman güncel tutan fonksiyon
-    function render() {
-        const select = document.getElementById("countrySelect");
-        const infoDiv = document.getElementById("info");
-        const flagImg = document.getElementById("flag");
-        const favList = document.getElementById("favoritesList");
-
-        // Hata kontrolü
-        if (state.error) {
-            infoDiv.innerHTML = `<p style="color:red">${state.error}</p>`;
-            return;
-        }
-
-        // Select menüsünü doldur (Sadece liste boşsa yap)
-        if (select.options.length === 0 && state.countries.length > 0) {
-            state.countries.forEach(country => {
-                const option = document.createElement("option");
-                option.value = country.name.common;
-                option.textContent = country.name.common;
-                select.appendChild(option);
+                const select = document.getElementById("countrySelect");
+                data.forEach(c => {
+                    const option = document.createElement("option");
+                    option.value = c.name.common;
+                    option.innerText = c.name.common;
+                    select.appendChild(option);
+                });
             });
-            // İlk açılışta ilk ülkeyi seçili yap
-            if(!state.selectedCountry) state.selectedCountry = state.countries[0];
-        }
 
-        // Seçili Ülke Detaylarını Göster
-        if (state.selectedCountry) {
-            flagImg.src = state.selectedCountry.flags.png;
-            infoDiv.innerHTML = `
-                <p><strong>Başkent:</strong> ${state.selectedCountry.capital?.[0] || "-"}</p>
-                <p><strong>Nüfus:</strong> ${state.selectedCountry.population?.toLocaleString()}</p>
+        function getCountry() {
+            const name = document.getElementById("countrySelect").value;
+            const country = countries.find(c => c.name.common === name);
+
+            const currency = country.currencies
+                ? Object.values(country.currencies)[0]
+                : null;
+
+            document.getElementById("flag").src = country.flags.png;
+
+            document.getElementById("info").innerHTML = `
+                <p><strong>Başkent:</strong> ${country.capital ? country.capital[0] : "-"}</p>
+                <p><strong>Bölge:</strong> ${country.region}</p>
+                <p><strong>Nüfus:</strong> ${country.population.toLocaleString()}</p>
+                <p><strong>Para Birimi:</strong> ${currency ? currency.name + " (" + currency.symbol + ")" : "-"}</p>
             `;
         }
-
-        // FAVORİLERİ LİSTELE (localStorage'dan gelen veriyi basar)
-        favList.innerHTML = ""; 
-        state.favorites.forEach((fav, index) => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-                <span>${fav.name.common}</span>
-                <button class="remove-btn" onclick="removeFromFavorites(${index})">Sil</button>
-            `;
-            favList.appendChild(li);
-        });
-    }
-
-    // 3. ACTIONS: İşlem fonksiyonları
-    function handleCountrySelection() {
-        const val = document.getElementById("countrySelect").value;
-        state.selectedCountry = state.countries.find(c => c.name.common === val);
-        render();
-    }
-
-    function addToFavorites() {
-        const current = state.selectedCountry;
-        if (current && !state.favorites.some(f => f.name.common === current.name.common)) {
-            state.favorites.push(current);
-            // Hafızaya yaz
-            localStorage.setItem("favorites", JSON.stringify(state.favorites));
-            render();
-        }
-    }
-
-    function removeFromFavorites(index) {
-        state.favorites.splice(index, 1);
-        // Hafızayı güncelle
-        localStorage.setItem("favorites", JSON.stringify(state.favorites));
-        render();
-    }
-
-    // Başlangıç fonksiyonu
-    async function init() {
-        // Önce hafızadaki favorileri bir göster (Hızlı yükleme için)
-        render(); 
-
-        try {
-            const res = await fetch("https://restcountries.com/v3.1/region/europe");
-            if (!res.ok) throw new Error("API hatası");
-            state.countries = await res.json();
-            render(); // Veriler gelince select menüsünü güncelle
-        } catch (err) {
-            state.error = "Veriler yüklenemedi.";
-            render();
-        }
-    }
-
-    init();
-</script>
-
+    </script>
 </body>
 </html>
